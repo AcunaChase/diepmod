@@ -1,0 +1,2 @@
+# Keep the project page out of GitHub's language stats so the repo shows as JavaScript
+*.html linguist-documentation
