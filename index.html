@@ -3,135 +3,106 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hexlock, an auto-farm mod for diep.io</title>
-<meta name="description" content="A Chrome extension mod menu for diep.io that auto-farms shapes using live canvas pixel scanning.">
+<title>Hexlock · auto-farm mod for diep.io</title>
 <link rel="icon" type="image/svg+xml" href="logo.svg">
+<meta name="description" content="A Chrome extension mod menu for diep.io that auto-farms shapes using live canvas pixel scanning.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&family=Ubuntu+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <style>
-  /* The page is the diep.io arena: its grey grid, its flat shapes, its outlined type.
-     Gold is reserved for Hexlock itself (the menu and the target lock). */
   :root{
-    --arena:#cdcdcd; --grid:#c1c1c1; --rule:#b2b2b2;
-    --ink:#2b2b2b; --soft:#505050; --outline:#484848;
-    --sq:#ffe869; --sq-d:#bfae4e;
-    --tri:#fc7677; --tri-d:#bd5859;
-    --hex:#768dfc; --hex-d:#5869bd;
-    --tank:#00b2e1; --tank-d:#0085a8;
-    --foe:#f14e54; --foe-d:#b43a3f;
-    --gold:#ffd700;
-    --link:#07566f;
+    --bg:#0b0b0d; --panel:#141417; --line:#26262b; --text:#ececec; --muted:#9a9aa3;
+    --gold:#ffd700; --sq:#ffe869; --tri:#fc7677; --hex:#768dfc; --ok:#4caf50;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  html{scroll-behavior:smooth}
-  body{
-    background-color:var(--arena);
-    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
-    background-size:24px 24px;
-    color:var(--ink);
-    font-family:"Ubuntu",system-ui,sans-serif;
-    font-size:17px;line-height:1.6;
-  }
-  .wrap{max-width:1080px;margin:0 auto;padding:0 20px}
-  code,pre{font-family:"Ubuntu Mono",ui-monospace,monospace}
-  code{font-size:.98em;background:#bdbdbd;padding:1px 5px;border-radius:4px}
-  a{color:var(--link);text-underline-offset:3px}
-  a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible,.menu-title:focus-visible{outline:3px solid #111;outline-offset:3px}
+  body{background:var(--bg);color:var(--text);font-family:"Space Grotesk",system-ui,sans-serif;line-height:1.6;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:40px 40px;background-attachment:fixed}
+  body::before{content:"";position:fixed;inset:0;background:radial-gradient(ellipse at 50% 0%,transparent 0%,var(--bg) 70%);pointer-events:none;z-index:-1}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+  code,.mono{font-family:"JetBrains Mono",monospace}
+  a{color:var(--gold)}
+  nav{display:flex;justify-content:space-between;align-items:center;padding:22px 0}
+  nav .logo{font-weight:700;letter-spacing:.08em;font-size:18px;display:flex;align-items:center;gap:10px}
+  nav .logo span{color:var(--gold)}
+  nav a{color:var(--muted);text-decoration:none;margin-left:20px;font-size:14px}
+  nav a:hover{color:var(--text)}
 
-  /* diep.io's own type treatment: white letters with a dark outline */
-  .stroke{color:#fff;-webkit-text-stroke:.16em var(--outline);paint-order:stroke fill;letter-spacing:.01em}
-
-  nav{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 0}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;color:var(--ink);text-decoration:none}
-  .brand svg{display:block}
-  .links{display:flex;gap:22px}
-  .links a{color:var(--ink);font-weight:500;font-size:15px;text-decoration:none}
-  .links a:hover{text-decoration:underline}
-
-  .hero{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);gap:28px;align-items:center;padding:28px 0 56px}
-  h1{font-size:clamp(36px,5.2vw,60px);line-height:1.1;font-weight:700}
-  .lead{font-size:19px;margin:22px 0 26px;max-width:42ch}
+  .hero{display:grid;grid-template-columns:1.2fr 1fr;gap:48px;align-items:center;padding:56px 0 80px}
+  .tag{display:inline-block;font-size:12px;color:var(--gold);border:1px solid #4a4220;background:#1b180a;padding:4px 10px;border-radius:99px;margin-bottom:18px}
+  h1{font-size:clamp(40px,6vw,64px);line-height:1.02;letter-spacing:-.02em}
+  h1 em{font-style:normal;color:var(--gold)}
+  .lead{color:var(--muted);font-size:18px;margin:20px 0 30px;max-width:46ch}
   .btns{display:flex;gap:12px;flex-wrap:wrap}
-  .btn{display:inline-block;padding:9px 20px;border:4px solid var(--outline);border-radius:9px;font-weight:700;font-size:17px;text-decoration:none;
-    color:#fff;-webkit-text-stroke:3.5px var(--outline);paint-order:stroke fill}
-  .btn.primary{background:linear-gradient(var(--tank) 56%,#00a0cb 56%)}
-  .btn.plain{background:linear-gradient(#a9a9a9 56%,#9b9b9b 56%)}
-  .btn:hover{filter:brightness(1.07)}
-  .btn:active{transform:translateY(1px)}
-  .meta{margin-top:16px;font-size:14px;color:var(--soft)}
+  .btn{padding:12px 20px;border-radius:10px;font-weight:700;text-decoration:none;font-size:15px}
+  .btn.primary{background:var(--gold);color:#111}
+  .btn.ghost{border:1px solid var(--line);color:var(--text);background:var(--panel)}
+  .btn:hover{filter:brightness(1.1)}
 
-  /* live demo */
-  .demo{position:relative;height:520px}
-  .field{position:absolute;inset:0}
-  .field canvas{display:block;width:100%;height:100%}
-  .score{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);min-width:220px;text-align:center;
-    background:#3c3c3c;border-radius:99px;padding:3px;pointer-events:none}
-  .score span{display:block;background:#6cf0a3;border-radius:99px;padding:1px 14px;font-weight:700;font-size:14px;
-    color:#fff;-webkit-text-stroke:3px #3c3c3c;paint-order:stroke fill}
+  /* replica of the in-game menu */
+  .stage{position:relative;height:360px;border:1px solid var(--line);border-radius:16px;background:#cdcdcd;overflow:hidden}
+  .stage .grid{position:absolute;inset:0;background-image:linear-gradient(#c3c3c3 1px,transparent 1px),linear-gradient(90deg,#c3c3c3 1px,transparent 1px);background-size:22px 22px}
+  .shape{position:absolute;border:3px solid rgba(0,0,0,.25)}
+  .s1{width:26px;height:26px;background:var(--sq);left:68%;top:20%;transform:rotate(18deg)}
+  .s2{width:26px;height:26px;background:var(--sq);left:80%;top:62%;transform:rotate(-30deg)}
+  .t1{width:0;height:0;border:none;border-left:16px solid transparent;border-right:16px solid transparent;border-bottom:28px solid var(--tri);left:58%;top:74%}
+  .h1{width:36px;height:36px;background:var(--hex);clip-path:polygon(25% 5%,75% 5%,100% 50%,75% 95%,25% 95%,0 50%);left:84%;top:32%}
+  .tank{position:absolute;left:60%;top:55%;width:40px;height:40px;margin:-20px;border-radius:50%;background:#00b2e1;border:3px solid #0085a8}
+  .barrel{position:absolute;left:60%;top:55%;width:38px;height:16px;margin-top:-8px;background:#999;border:3px solid #727272;transform-origin:0 50%;animation:aim 4s ease-in-out infinite}
+  @keyframes aim{0%,100%{transform:rotate(-38deg)}33%{transform:rotate(12deg)}66%{transform:rotate(48deg)}}
+  .lock{position:absolute;width:40px;height:40px;margin:-20px;border:2px solid var(--gold);border-radius:50%;left:calc(68% + 13px);top:calc(20% + 13px);animation:lock 4s ease-in-out infinite}
+  @keyframes lock{0%,100%{left:calc(68% + 13px);top:calc(20% + 13px)}33%{left:calc(84% + 18px);top:calc(32% + 18px)}66%{left:calc(58% + 16px);top:calc(74% + 16px)}}
+  .menu{position:absolute;top:12px;left:12px;background:rgba(0,0,0,.95);border:2px solid var(--gold);border-radius:12px;padding:12px 16px;
+    color:#fff;font:13px Arial,sans-serif;width:190px;box-shadow:0 0 30px rgba(255,215,0,.3)}
+  .menu b{color:var(--gold);font-size:15px;display:block;margin-bottom:8px}
+  .menu .lbl{color:#aaa;font-size:10px;margin-bottom:3px}
+  .menu .sel{background:#222;border:1px solid #444;border-radius:4px;padding:3px 6px;margin-bottom:8px}
+  .menu .row{margin:4px 0;display:flex;gap:7px;align-items:center}
+  .menu .cb{width:12px;height:12px;border:1px solid #888;border-radius:2px;background:#fff}
+  .menu .cb.on{background:#1a73e8;border-color:#1a73e8}
+  .menu .foot{margin-top:8px;padding-top:6px;border-top:1px solid #333;font-size:10px;color:#666;display:flex;justify-content:space-between}
+  .menu .foot .ok{color:var(--ok)}
 
-  /* the mod menu, styled like the real one in the extension */
-  .menu{position:absolute;top:10px;left:10px;z-index:2;width:196px;background:rgba(0,0,0,.95);border:2px solid var(--gold);border-radius:12px;
-    padding:10px 14px 12px;color:#fff;font:13px Arial,sans-serif;box-shadow:0 6px 22px rgba(0,0,0,.28)}
-  .menu-title{display:block;color:var(--gold);font-weight:700;font-size:15px;margin:-2px -6px 6px;padding:4px 6px;border-radius:6px;cursor:move;touch-action:none;user-select:none}
-  .menu label.lbl{display:block;color:#aaa;font-size:10px;margin-bottom:3px}
-  .menu select{width:100%;background:#222;color:#fff;border:1px solid #444;border-radius:4px;padding:4px 6px;margin-bottom:8px;font:inherit}
-  .menu .row{display:flex;gap:8px;align-items:center;margin:5px 0;cursor:pointer}
-  .menu .row input{width:14px;height:14px;accent-color:#1a73e8}
-  .menu .foot{margin-top:9px;padding-top:7px;border-top:1px solid #333;font-size:10px;color:#8a8a8a;display:flex;justify-content:space-between}
-  .menu .foot .on{color:#5fd068}
+  section{padding:64px 0;border-top:1px solid var(--line)}
+  h2{font-size:30px;letter-spacing:-.01em;margin-bottom:8px}
+  .sub{color:var(--muted);margin-bottom:32px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .card .ic{font-size:22px;margin-bottom:8px}
+  .card h3{font-size:17px;margin-bottom:6px}
+  .card p{color:var(--muted);font-size:14px}
 
-  section{padding:52px 0}
-  h2{font-size:clamp(28px,3.4vw,36px);line-height:1.15;font-weight:700;margin-bottom:10px}
-  .sub{max-width:60ch;margin-bottom:26px}
+  .steps{counter-reset:s;display:grid;gap:14px}
+  .step{display:grid;grid-template-columns:44px 1fr;gap:14px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .step::before{counter-increment:s;content:counter(s);width:36px;height:36px;border-radius:9px;background:#1b180a;border:1px solid #4a4220;color:var(--gold);display:grid;place-items:center;font-weight:700}
+  .step h3{font-size:16px}
+  .step p{color:var(--muted);font-size:14px}
 
-  .features{display:grid;grid-template-columns:1fr 1fr;column-gap:40px}
-  .features div{display:grid;grid-template-columns:150px 1fr;gap:16px;padding:14px 0;border-top:3px solid var(--rule)}
-  .features dt{font-weight:700}
+  .colors{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:22px}
+  .sw{display:flex;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .sw i{width:30px;height:30px;border-radius:7px;flex:none}
+  .sw small{display:block;color:var(--muted);font-size:12px}
 
-  .steps{list-style:none;counter-reset:s;display:grid;grid-template-columns:1fr 1fr;gap:26px 40px}
-  .steps li{counter-increment:s;display:grid;grid-template-columns:48px 1fr;gap:16px;align-items:start}
-  .steps li::before{content:counter(s);width:44px;height:44px;border-radius:50%;background:var(--tank);border:4px solid var(--tank-d);
-    display:grid;place-items:center;font-weight:700;font-size:19px;color:#fff;-webkit-text-stroke:3.5px var(--outline);paint-order:stroke fill}
-  .steps h3{font-size:18px;line-height:1.3;margin-bottom:4px}
+  pre{background:#08080a;border:1px solid var(--line);border-radius:12px;padding:18px;overflow-x:auto;font-size:13px;color:#d6d6d6}
+  .k{color:#c792ea}.s{color:#c3e88d}.n{color:#f78c6c}.c{color:#676e95}
 
-  .ranges{margin-top:40px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:28px 40px;align-items:start}
-  .ranges table{width:100%;border-collapse:collapse}
-  .ranges caption{text-align:left;font-weight:700;padding-bottom:10px}
-  .ranges td{padding:9px 0;border-top:3px solid var(--rule);vertical-align:middle}
-  .ranges td:first-child{width:46px}
-  .ranges td:nth-child(2){font-weight:500}
-  .ranges td:last-child{font-family:"Ubuntu Mono",monospace;font-size:15px;text-align:right}
-  .ranges svg{display:block}
-  pre{background:#2b2b2b;color:#ececec;border:4px solid #1d1d1d;border-radius:10px;padding:16px 18px;overflow-x:auto;font-size:15px;line-height:1.5}
-  pre .k{color:var(--sq)} pre .n{color:#ffa3a4} pre .c{color:#a7a7a7}
+  ol.install{padding-left:20px;color:var(--muted)}
+  ol.install li{margin:8px 0}
+  ol.install b{color:var(--text)}
+  .note{margin-top:24px;font-size:14px;color:var(--muted);border-left:3px solid var(--gold);padding:10px 14px;background:var(--panel);border-radius:0 10px 10px 0}
 
-  .install{padding-left:22px;max-width:62ch}
-  .install li{margin:8px 0;padding-left:4px}
-  .note{margin-top:26px;max-width:62ch;font-size:15px;color:var(--soft)}
+  footer{padding:36px 0 50px;border-top:1px solid var(--line);color:var(--muted);font-size:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
 
-  footer{padding:26px 0 48px;border-top:3px solid var(--rule);font-size:14px;color:var(--soft);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
-
-  @media (max-width:860px){
-    .hero{grid-template-columns:1fr;padding-top:12px}
-    .links{display:none}
-    .demo{height:auto;display:flex;flex-direction:column;gap:12px}
-    .menu{position:static;width:100%;max-width:340px}
-    .menu-title{cursor:default}
-    .field{position:relative;inset:auto;height:360px}
-    .features,.steps,.ranges{grid-template-columns:1fr}
-    .features div{grid-template-columns:1fr;gap:2px}
+  @media (max-width:820px){
+    .hero{grid-template-columns:1fr;padding-top:24px}
+    nav .links{display:none}
+    .menu{transform:scale(.8);transform-origin:top left}
   }
-  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 </style>
 </head>
 <body>
 <div class="wrap">
   <nav>
-    <a class="brand" href="#top" aria-label="Hexlock home">
-      <svg width="34" height="34" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#141417"/><polygon points="32,8 52.8,20 52.8,44 32,56 11.2,44 11.2,20" fill="none" stroke="#ffd700" stroke-width="5" stroke-linejoin="round"/><path d="M32 17v7M32 40v7M17 32h7M40 32h7" stroke="#ffd700" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="32" r="5" fill="#ffd700"/></svg>
-      Hexlock
-    </a>
+    <div class="logo mono"><img src="logo.svg" alt="" width="32" height="32">HEX<span>LOCK</span></div>
     <div class="links">
       <a href="#features">Features</a>
       <a href="#how">How it works</a>
@@ -139,84 +110,66 @@
     </div>
   </nav>
 
-  <header class="hero" id="top">
+  <header class="hero">
     <div>
-      <h1 class="stroke">A diep.io mod menu that farms shapes for you.</h1>
+      <div class="tag mono">Chrome extension · Manifest V3 · v1.0</div>
+      <h1>A mod menu for <em>diep.io</em> that farms for you.</h1>
       <p class="lead">Hexlock reads the game canvas pixel by pixel, finds the nearest shape, and aims and fires at it automatically. You keep control of upgrades.</p>
       <div class="btns">
         <a class="btn primary" href="hexlock-extension.zip">Download extension</a>
-        <a class="btn plain" href="extension/content.js">View source</a>
+        <a class="btn ghost" href="extension/content.js">View source</a>
       </div>
-      <p class="meta">Chrome extension, Manifest V3, version 1.0. The menu in the demo works, so change the target and watch the tank.</p>
     </div>
 
-    <div class="demo" id="demo">
-      <form class="menu" id="menu" onsubmit="return false" aria-label="Hexlock menu, live demo">
-        <span class="menu-title" id="menuTitle">⬡ HEXLOCK</span>
-        <label class="lbl" for="mTarget">🎯 FARM TARGET</label>
-        <select id="mTarget">
-          <option value="all" selected>🎯 All Items</option>
-          <option value="squares">⬜ Squares</option>
-          <option value="triangles">🔺 Triangles</option>
-          <option value="hexagons">⬡ Hexagons</option>
-        </select>
-        <label class="row"><input type="checkbox" id="mFarm" checked> 🎯 Auto-Farm</label>
-        <label class="row"><input type="checkbox" id="mSpin"> 🌀 Spinner</label>
-        <label class="row"><input type="checkbox" id="mShow" checked> 📐 Show Targets</label>
-        <div class="foot"><span id="mStatus" class="on">🟢 Active</span><span id="mPick">🎯 All ✓</span></div>
-      </form>
-      <div class="field" id="field">
-        <canvas id="arena" role="img" aria-label="Demo of a tank automatically aiming and firing at the nearest shape"></canvas>
-        <div class="score" aria-hidden="true"><span id="score">Score: 0</span></div>
+    <div class="stage" aria-label="Preview of the mod menu over a diep.io game">
+      <div class="grid"></div>
+      <div class="shape s1"></div><div class="shape s2"></div>
+      <div class="shape t1"></div><div class="shape h1"></div>
+      <div class="barrel"></div><div class="tank"></div>
+      <div class="lock"></div>
+      <div class="menu">
+        <b>⬡ HEXLOCK</b>
+        <div class="lbl">🎯 FARM TARGET</div>
+        <div class="sel">🎯 All Items ▾</div>
+        <div class="row"><span class="cb on"></span>🎯 Auto-Farm</div>
+        <div class="row"><span class="cb"></span>🌀 Spinner</div>
+        <div class="row"><span class="cb on"></span>📐 Show Targets</div>
+        <div class="foot"><span class="ok">🟢 Active</span><span>🎯 All ✓</span></div>
       </div>
     </div>
   </header>
 
   <section id="features">
-    <h2 class="stroke">Features</h2>
-    <p class="sub">Everything lives in one small panel. The demo at the top of the page runs the same options.</p>
-    <dl class="features">
-      <div><dt>Auto-Farm</dt><dd>Locks onto the closest shape and fires at it about every 60 ms.</dd></div>
-      <div><dt>Target picker</dt><dd>Farm everything, or only squares, triangles or hexagons.</dd></div>
-      <div><dt>Show Targets</dt><dd>Draws a crosshair, label and dashed line to the current target.</dd></div>
-      <div><dt>Spinner</dt><dd>Sweeps your aim in a circle around your tank while firing.</dd></div>
-      <div><dt>Avoids players</dt><dd>Skips the red player color so it won't lock onto tanks.</dd></div>
-      <div><dt>Draggable</dt><dd>Grab the menu by its title and park it anywhere on screen.</dd></div>
-    </dl>
+    <h2>Features</h2>
+    <p class="sub">Everything lives in one small, draggable panel.</p>
+    <div class="cards">
+      <div class="card"><div class="ic">🎯</div><h3>Auto-Farm</h3><p>Locks onto the closest shape and fires at it about every 60 ms.</p></div>
+      <div class="card"><div class="ic">🔀</div><h3>Target picker</h3><p>Farm everything, or only squares, triangles or hexagons.</p></div>
+      <div class="card"><div class="ic">📐</div><h3>Show Targets</h3><p>Draws a crosshair, label and dashed line to the current target.</p></div>
+      <div class="card"><div class="ic">🌀</div><h3>Spinner</h3><p>Sweeps your aim in a circle around your tank while firing.</p></div>
+      <div class="card"><div class="ic">🚫</div><h3>Avoids players</h3><p>Skips the red player color so it won't lock onto tanks.</p></div>
+      <div class="card"><div class="ic">✋</div><h3>Draggable</h3><p>Grab the menu and park it anywhere on screen.</p></div>
+    </div>
   </section>
 
   <section id="how">
-    <h2 class="stroke">How it works</h2>
+    <h2>How it works</h2>
     <p class="sub">No game files or network packets are touched. It just looks at the screen and moves the mouse.</p>
-    <ol class="steps">
-      <li><div><h3>Scan the canvas</h3><p>Every frame it grabs the game canvas with <code>getImageData</code> and samples every 3rd pixel.</p></div></li>
-      <li><div><h3>Classify by color</h3><p>Each sampled pixel is checked against color ranges for squares, triangles and hexagons. Player red is filtered out first.</p></div></li>
-      <li><div><h3>Pick the nearest</h3><p>Distance is measured from the center of the screen, which is your tank. The closest match wins.</p></div></li>
-      <li><div><h3>Aim and fire</h3><p>It dispatches synthetic <code>mousemove</code>, <code>mousedown</code> and <code>mouseup</code> events at that spot. The loop runs every 30 ms.</p></div></li>
-    </ol>
+    <div class="steps">
+      <div class="step"><div><h3>Scan the canvas</h3><p>Every frame it grabs the game canvas with <code>getImageData</code> and samples every 3rd pixel.</p></div></div>
+      <div class="step"><div><h3>Classify by color</h3><p>Each sampled pixel is checked against color ranges for squares, triangles and hexagons. Player red is filtered out first.</p></div></div>
+      <div class="step"><div><h3>Pick the nearest</h3><p>Distance is measured from the center of the screen (your tank). The closest match wins.</p></div></div>
+      <div class="step"><div><h3>Aim and fire</h3><p>It dispatches synthetic <code>mousemove</code>, <code>mousedown</code> and <code>mouseup</code> events at that spot. The loop runs every 30 ms.</p></div></div>
+    </div>
 
-    <div class="ranges">
-      <table>
-        <caption>Color ranges it matches</caption>
-        <tr>
-          <td><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><rect x="4" y="4" width="22" height="22" fill="#ffe869" stroke="#bfae4e" stroke-width="3.5" stroke-linejoin="round"/></svg></td>
-          <td>Squares</td><td>R&gt;180 G&gt;180 B&lt;120</td>
-        </tr>
-        <tr>
-          <td><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><polygon points="15,4 27,25 3,25" fill="#fc7677" stroke="#bd5859" stroke-width="3.5" stroke-linejoin="round"/></svg></td>
-          <td>Triangles</td><td>R&gt;150 G 50–130 B 30–130</td>
-        </tr>
-        <tr>
-          <td><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><polygon points="9,4 21,4 27,15 21,26 9,26 3,15" fill="#768dfc" stroke="#5869bd" stroke-width="3.5" stroke-linejoin="round"/></svg></td>
-          <td>Hexagons</td><td>R&lt;130 G&lt;130 B&gt;180</td>
-        </tr>
-        <tr>
-          <td><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="15" r="11" fill="#f14e54" stroke="#b43a3f" stroke-width="3.5"/></svg></td>
-          <td>Player, skipped</td><td>rgb(241, 78, 84) ± range</td>
-        </tr>
-      </table>
+    <div class="colors">
+      <div class="sw"><i style="background:var(--sq)"></i><div><b>Squares</b><small class="mono">R&gt;180 G&gt;180 B&lt;120</small></div></div>
+      <div class="sw"><i style="background:var(--tri)"></i><div><b>Triangles</b><small class="mono">R&gt;150 G 50–130 B 30–130</small></div></div>
+      <div class="sw"><i style="background:var(--hex)"></i><div><b>Hexagons</b><small class="mono">R&lt;130 G&lt;130 B&gt;180</small></div></div>
+      <div class="sw"><i style="background:rgb(241,78,84)"></i><div><b>Player (skipped)</b><small class="mono">rgb(241, 78, 84) ± range</small></div></div>
+    </div>
 
-<pre><span class="c">// find the closest shape to your tank</span>
+    <pre style="margin-top:22px"><span class="c">// find the closest shape to your tank</span>
 <span class="k">for</span> (<span class="k">const</span> target <span class="k">of</span> targets) {
   <span class="k">const</span> dx = target.x - centerX;
   <span class="k">const</span> dy = target.y - centerY;
@@ -226,16 +179,15 @@
     nearest = target;
   }
 }</pre>
-    </div>
   </section>
 
   <section id="install">
-    <h2 class="stroke">Install</h2>
+    <h2>Install</h2>
     <p class="sub">Takes about a minute in Chrome or any Chromium browser.</p>
     <ol class="install">
       <li><b>Download</b> <a href="hexlock-extension.zip">hexlock-extension.zip</a> and unzip it.</li>
       <li>Go to <code>chrome://extensions</code>.</li>
-      <li>Turn on <b>Developer mode</b> in the top right.</li>
+      <li>Turn on <b>Developer mode</b> (top right).</li>
       <li>Click <b>Load unpacked</b> and pick the unzipped <code>extension</code> folder.</li>
       <li>Open <a href="https://diep.io">diep.io</a>. The gold menu shows up in the top left.</li>
     </ol>
@@ -243,309 +195,9 @@
   </section>
 
   <footer>
-    <span>Hexlock, a diep.io mod</span>
-    <span>JavaScript, Chrome Extensions API, Canvas</span>
+    <span>Hexlock · a diep.io mod</span>
+    <span class="mono">JavaScript · Chrome Extensions API · Canvas</span>
   </footer>
 </div>
-
-<script>
-(() => {
-  const field = document.getElementById('field');
-  const demo = document.getElementById('demo');
-  const menu = document.getElementById('menu');
-  const cv = document.getElementById('arena');
-  const ctx = cv.getContext('2d');
-  const scoreEl = document.getElementById('score');
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const narrow = matchMedia('(max-width: 860px)');
-  const TAU = Math.PI * 2;
-
-  const TYPES = {
-    squares:   {sides: 4, r: 15, hp: 2, pts: 10,  fill: '#ffe869', line: '#bfae4e', label: 'SQUARE'},
-    triangles: {sides: 3, r: 17, hp: 3, pts: 25,  fill: '#fc7677', line: '#bd5859', label: 'TRIANGLE'},
-    hexagons:  {sides: 6, r: 24, hp: 6, pts: 130, fill: '#768dfc', line: '#5869bd', label: 'HEXAGON'}
-  };
-  const state = {target: 'all', farm: true, spin: false, show: true, score: 0};
-  const tank = {x: 0, y: 0, a: -0.6, recoil: 0, cool: 0};
-  const foe = {x: 0, y: 0, vx: -20, vy: 14, a: 2};
-  const pointer = {x: 0, y: 0, inside: false};
-  let W = 0, H = 0, shapes = [], bullets = [], pops = [], respawns = [], target = null;
-
-  const rand = (a, b) => a + Math.random() * (b - a);
-
-  function menuBox() {
-    if (narrow.matches) return null;
-    const m = menu.getBoundingClientRect(), f = field.getBoundingClientRect();
-    return {x0: m.left - f.left - 24, y0: m.top - f.top - 24, x1: m.right - f.left + 24, y1: m.bottom - f.top + 24};
-  }
-
-  function spawn(initial) {
-    const roll = Math.random();
-    const type = roll < 0.55 ? 'squares' : roll < 0.85 ? 'triangles' : 'hexagons';
-    const t = TYPES[type], box = menuBox();
-    let x = 0, y = 0;
-    for (let i = 0; i < 30; i++) {
-      x = rand(t.r + 10, W - t.r - 10);
-      y = rand(t.r + 10, H - t.r - 44);
-      const nearTank = Math.hypot(x - tank.x, y - tank.y) < 90;
-      const underMenu = box && x > box.x0 && x < box.x1 && y > box.y0 && y < box.y1;
-      if (!nearTank && !underMenu) break;
-    }
-    shapes.push({type, x, y, rot: rand(0, TAU), vr: rand(-0.5, 0.5), vx: rand(-7, 7), vy: rand(-7, 7),
-                 hp: t.hp, age: initial ? 1 : 0, hit: 0});
-  }
-
-  function resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    W = field.clientWidth; H = field.clientHeight;
-    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    tank.x = narrow.matches ? W * 0.5 : W * 0.56;
-    tank.y = narrow.matches ? H * 0.5 : H * 0.56;
-    const want = Math.max(8, Math.min(18, Math.round(W * H / 21000)));
-    shapes = shapes.filter(s => s.x < W - 10 && s.y < H - 40);
-    while (shapes.length + respawns.length < want) spawn(true);
-    while (shapes.length > want) shapes.pop();
-    foe.x = Math.min(Math.max(foe.x || W * 0.86, 40), W - 40);
-    foe.y = Math.min(Math.max(foe.y || H * 0.16, 40), H - 60);
-    if (reduce) { update(0, true); draw(); }
-  }
-
-  function pickTarget() {
-    let best = null, bestD = Infinity;
-    for (const s of shapes) {
-      if (state.target !== 'all' && s.type !== state.target) continue;
-      if (s.age < 0.3) continue;
-      const d = (s.x - tank.x) ** 2 + (s.y - tank.y) ** 2;
-      if (d < bestD && d > 100) { bestD = d; best = s; }
-    }
-    return best;
-  }
-
-  function fire() {
-    bullets.push({x: tank.x + Math.cos(tank.a) * 40, y: tank.y + Math.sin(tank.a) * 40,
-                  vx: Math.cos(tank.a) * 390, vy: Math.sin(tank.a) * 390, life: 0.95});
-    tank.recoil = 1; tank.cool = 0.26;
-  }
-
-  function update(dt, snap) {
-    for (const s of shapes) {
-      s.x += s.vx * dt; s.y += s.vy * dt; s.rot += s.vr * dt;
-      s.vx *= 1 - 0.6 * dt; s.vy *= 1 - 0.6 * dt;
-      s.age += dt; s.hit = Math.max(0, s.hit - dt * 6);
-      const r = TYPES[s.type].r + 6;
-      if (s.x < r) { s.x = r; s.vx = Math.abs(s.vx); } else if (s.x > W - r) { s.x = W - r; s.vx = -Math.abs(s.vx); }
-      if (s.y < r) { s.y = r; s.vy = Math.abs(s.vy); } else if (s.y > H - r - 34) { s.y = H - r - 34; s.vy = -Math.abs(s.vy); }
-    }
-    for (let i = respawns.length - 1; i >= 0; i--) {
-      respawns[i] -= dt;
-      if (respawns[i] <= 0) { respawns.splice(i, 1); spawn(false); }
-    }
-
-    foe.x += foe.vx * dt; foe.y += foe.vy * dt; foe.a += 0.4 * dt;
-    if (foe.x < 40 || foe.x > W - 40) foe.vx *= -1;
-    if (foe.y < 40 || foe.y > H - 70) foe.vy *= -1;
-    foe.x = Math.min(Math.max(foe.x, 40), W - 40);
-    foe.y = Math.min(Math.max(foe.y, 40), H - 70);
-
-    target = state.farm ? pickTarget() : null;
-    tank.cool -= dt; tank.recoil = Math.max(0, tank.recoil - dt * 7);
-    let want = null;
-    if (state.farm && state.spin) {
-      tank.a += 5 * dt;
-      if (tank.cool <= 0 && dt > 0) fire();
-    } else if (state.farm && target) {
-      want = Math.atan2(target.y - tank.y, target.x - tank.x);
-    } else if (!state.farm && pointer.inside) {
-      want = Math.atan2(pointer.y - tank.y, pointer.x - tank.x);
-    }
-    if (want !== null) {
-      const diff = ((want - tank.a + Math.PI) % TAU + TAU) % TAU - Math.PI;
-      tank.a += snap ? diff : diff * (1 - Math.exp(-14 * dt));
-      if (state.farm && Math.abs(diff) < 0.2 && tank.cool <= 0 && dt > 0) fire();
-    }
-
-    for (let i = bullets.length - 1; i >= 0; i--) {
-      const b = bullets[i];
-      b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
-      let gone = b.life <= 0;
-      for (let j = shapes.length - 1; j >= 0 && !gone; j--) {
-        const s = shapes[j], t = TYPES[s.type];
-        if (Math.hypot(s.x - b.x, s.y - b.y) < t.r + 7) {
-          gone = true; s.hp--; s.hit = 1; s.vx += b.vx * 0.05; s.vy += b.vy * 0.05;
-          if (s.hp <= 0) {
-            shapes.splice(j, 1);
-            pops.push({x: s.x, y: s.y, rot: s.rot, type: s.type, t: 0});
-            respawns.push(rand(0.8, 1.8));
-            state.score += t.pts;
-            scoreEl.textContent = 'Score: ' + state.score.toLocaleString('en-US');
-          }
-        }
-      }
-      if (gone) bullets.splice(i, 1);
-    }
-    for (let i = pops.length - 1; i >= 0; i--) { pops[i].t += dt * 4; if (pops[i].t >= 1) pops.splice(i, 1); }
-  }
-
-  function poly(x, y, r, sides, rot) {
-    ctx.beginPath();
-    for (let i = 0; i < sides; i++) {
-      const a = rot + i * TAU / sides;
-      ctx[i ? 'lineTo' : 'moveTo'](x + Math.cos(a) * r, y + Math.sin(a) * r);
-    }
-    ctx.closePath();
-  }
-
-  function drawTank(t, fill, line, recoil) {
-    ctx.save();
-    ctx.translate(t.x, t.y); ctx.rotate(t.a);
-    ctx.lineWidth = 4; ctx.lineJoin = 'round';
-    ctx.fillStyle = '#999'; ctx.strokeStyle = '#727272';
-    ctx.beginPath(); ctx.rect(4 - recoil * 5, -9.5, 40, 19); ctx.fill(); ctx.stroke();
-    ctx.fillStyle = fill; ctx.strokeStyle = line;
-    ctx.beginPath(); ctx.arc(0, 0, 22, 0, TAU); ctx.fill(); ctx.stroke();
-    ctx.restore();
-  }
-
-  function outlined(text, x, y, fill) {
-    ctx.lineWidth = 3.5; ctx.lineJoin = 'round'; ctx.strokeStyle = '#3a3a3a';
-    ctx.strokeText(text, x, y); ctx.fillStyle = fill; ctx.fillText(text, x, y);
-  }
-
-  function draw() {
-    ctx.clearRect(0, 0, W, H);
-    ctx.lineJoin = 'round';
-
-    if (state.show && target) {
-      ctx.save();
-      ctx.setLineDash([7, 7]); ctx.lineCap = 'round';
-      ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(58,58,58,.35)';
-      ctx.beginPath(); ctx.moveTo(tank.x, tank.y); ctx.lineTo(target.x, target.y); ctx.stroke();
-      ctx.lineWidth = 2.5; ctx.strokeStyle = '#ffd700';
-      ctx.beginPath(); ctx.moveTo(tank.x, tank.y); ctx.lineTo(target.x, target.y); ctx.stroke();
-      ctx.restore();
-    }
-
-    for (const s of shapes) {
-      const t = TYPES[s.type];
-      ctx.globalAlpha = Math.min(1, s.age / 0.3);
-      poly(s.x, s.y, t.r, t.sides, s.rot);
-      ctx.fillStyle = t.fill; ctx.strokeStyle = t.line; ctx.lineWidth = 4;
-      ctx.fill(); ctx.stroke();
-      if (s.hit > 0) { ctx.globalAlpha = s.hit * 0.6; ctx.fillStyle = '#fff'; ctx.fill(); }
-    }
-    for (const p of pops) {
-      const t = TYPES[p.type];
-      ctx.globalAlpha = 1 - p.t;
-      poly(p.x, p.y, t.r * (1 + p.t * 0.5), t.sides, p.rot);
-      ctx.fillStyle = t.fill; ctx.strokeStyle = t.line; ctx.lineWidth = 4;
-      ctx.fill(); ctx.stroke();
-    }
-    for (const b of bullets) {
-      ctx.globalAlpha = Math.min(1, b.life / 0.2);
-      ctx.beginPath(); ctx.arc(b.x, b.y, 7.5, 0, TAU);
-      ctx.fillStyle = '#00b2e1'; ctx.strokeStyle = '#0085a8'; ctx.lineWidth = 3.5;
-      ctx.fill(); ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
-
-    drawTank(foe, '#f14e54', '#b43a3f', 0);
-    drawTank(tank, '#00b2e1', '#0085a8', tank.recoil);
-
-    ctx.font = '700 12px Ubuntu, Arial, sans-serif';
-    ctx.textBaseline = 'middle';
-    if (state.show) {
-      ctx.textAlign = 'center';
-      outlined('player, skipped', foe.x, foe.y - 36, '#fff');
-    }
-    if (state.show && target) {
-      const r = TYPES[target.type].r + 11;
-      for (const [w, c] of [[5.5, '#3a3a3a'], [2.5, '#ffd700']]) {
-        ctx.lineWidth = w; ctx.strokeStyle = c; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.arc(target.x, target.y, r, 0, TAU); ctx.stroke();
-        ctx.beginPath();
-        for (let i = 0; i < 4; i++) {
-          const a = i * Math.PI / 2;
-          ctx.moveTo(target.x + Math.cos(a) * (r - 5), target.y + Math.sin(a) * (r - 5));
-          ctx.lineTo(target.x + Math.cos(a) * (r + 7), target.y + Math.sin(a) * (r + 7));
-        }
-        ctx.stroke();
-      }
-      const right = target.x + r + 90 < W;
-      ctx.textAlign = right ? 'left' : 'right';
-      outlined(TYPES[target.type].label, target.x + (right ? r + 12 : -r - 12), target.y, '#ffd700');
-    }
-  }
-
-  // controls
-  const $ = id => document.getElementById(id);
-  const PICK = {all: '🎯 All ✓', squares: '⬜ Squares ✓', triangles: '🔺 Triangles ✓', hexagons: '⬡ Hexagons ✓'};
-  function sync() {
-    state.target = $('mTarget').value;
-    state.farm = $('mFarm').checked;
-    state.spin = $('mSpin').checked;
-    state.show = $('mShow').checked;
-    $('mStatus').textContent = state.farm ? '🟢 Active' : '⚪ Idle';
-    $('mStatus').className = state.farm ? 'on' : '';
-    $('mPick').textContent = PICK[state.target];
-    if (reduce) { update(0, true); draw(); }
-  }
-  menu.addEventListener('change', sync);
-
-  // with Auto-Farm off you aim and fire by hand
-  field.addEventListener('pointermove', e => {
-    const f = field.getBoundingClientRect();
-    pointer.x = e.clientX - f.left; pointer.y = e.clientY - f.top; pointer.inside = true;
-  });
-  field.addEventListener('pointerleave', () => { pointer.inside = false; });
-  field.addEventListener('pointerdown', e => {
-    if (state.farm || reduce) return;
-    const f = field.getBoundingClientRect();
-    tank.a = Math.atan2(e.clientY - f.top - tank.y, e.clientX - f.left - tank.x);
-    fire();
-  });
-
-  // drag the menu by its title, like the real one
-  const title = $('menuTitle');
-  let drag = null;
-  title.addEventListener('pointerdown', e => {
-    if (narrow.matches) return;
-    const m = menu.getBoundingClientRect();
-    drag = {dx: e.clientX - m.left, dy: e.clientY - m.top};
-    title.setPointerCapture(e.pointerId);
-  });
-  title.addEventListener('pointermove', e => {
-    if (!drag) return;
-    const d = demo.getBoundingClientRect();
-    const x = Math.min(Math.max(e.clientX - d.left - drag.dx, 0), d.width - menu.offsetWidth);
-    const y = Math.min(Math.max(e.clientY - d.top - drag.dy, 0), d.height - menu.offsetHeight);
-    menu.style.left = x + 'px'; menu.style.top = y + 'px';
-  });
-  const drop = () => { drag = null; };
-  title.addEventListener('pointerup', drop);
-  title.addEventListener('pointercancel', drop);
-  narrow.addEventListener('change', () => { menu.style.left = ''; menu.style.top = ''; });
-
-  // loop, paused while the demo is off screen or the tab is hidden
-  let visible = true, last = 0, raf = 0;
-  function frame(now) {
-    const dt = Math.min((now - last) / 1000, 0.05); last = now;
-    update(dt, false); draw();
-    raf = requestAnimationFrame(frame);
-  }
-  function run() {
-    cancelAnimationFrame(raf);
-    if (reduce || !visible || document.hidden) return;
-    last = performance.now(); raf = requestAnimationFrame(frame);
-  }
-  new IntersectionObserver(es => { visible = es[0].isIntersecting; run(); }).observe(field);
-  document.addEventListener('visibilitychange', run);
-  new ResizeObserver(resize).observe(field);
-
-  resize(); sync();
-  if (reduce) { update(0, true); draw(); } else run();
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (reduce) draw(); });
-})();
-</script>
 </body>
 </html>
