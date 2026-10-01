@@ -546,6 +546,11 @@
   if (reduce) { update(0, true); draw(); } else run();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (reduce) draw(); });
 })();
+
+// Download links always fetch the newest zip, never a copy the browser cached earlier
+document.querySelectorAll('a[href$="hexlock-extension.zip"]').forEach(a => {
+  a.addEventListener('click', () => { a.href = 'hexlock-extension.zip?t=' + Date.now(); });
+});
 </script>
 </body>
 </html>
