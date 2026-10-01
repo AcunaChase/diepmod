@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Chase Geer Mod",
+  "version": "1.0",
+  "description": "Mod menu for diep.io",
+  "permissions": ["storage"],
+  "host_permissions": ["https://diep.io/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://diep.io/*"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ]
+}
