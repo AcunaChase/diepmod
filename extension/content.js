@@ -64,6 +64,9 @@
         `;
 
         document.body.appendChild(menu);
+        // Top center: the game's class upgrades use the top left, the leaderboard the top right
+        const centered = Math.max(10, (window.innerWidth - menu.offsetWidth) / 2);
+        menu.style.setProperty('left', centered + 'px', 'important');
         console.log('✅ Menu created!');
         return menu;
     }
@@ -149,13 +152,37 @@
         }, 10);
     }
 
+    // ========== UI ZONES ==========
+    // diep.io draws its HUD on the game canvas, and parts of it use shape colors
+    // (the level bar is the same yellow as squares). Pixels inside these boxes are never targets.
+    function getUiZones(canvas) {
+        const W = canvas.width;
+        const H = canvas.height;
+        const s = Math.max(W / 1920, H / 1080); // the game's UI scale
+        return [
+            [W / 2 - 300 * s, H - 130 * s, W / 2 + 300 * s, H], // name, score and level bars
+            [0, H - 300 * s, 300 * s, H],                       // stat upgrades
+            [0, 0, 270 * s, 400 * s],                           // class upgrades
+            [W - 260 * s, 0, W, 320 * s],                       // leaderboard
+            [W - 220 * s, H - 220 * s, W, H]                    // minimap
+        ].map(zone => zone.map(v => Math.max(0, Math.round(v))));
+    }
+
+    function inUiZone(zones, x, y) {
+        for (const z of zones) {
+            if (x >= z[0] && y >= z[1] && x < z[2] && y < z[3]) return true;
+        }
+        return false;
+    }
+
     // ========== DETECT ITEMS (AVOID PLAYER COLOR) ==========
     function detectItems() {
         const canvas = document.querySelector('canvas');
         if (!canvas) return { squares: [], triangles: [], hexagons: [] };
-        
+
         const objects = { squares: [], triangles: [], hexagons: [] };
-        
+        const zones = getUiZones(canvas);
+
         try {
             const ctx = canvas.getContext('2d');
             const step = 3;
@@ -197,7 +224,10 @@
                     
                     // Also check if it's a dark red (could be player)
                     const isDarkRed = (r > 150 && g < 80 && b < 80);
-                    
+
+                    // Skip the game's own HUD
+                    if ((isSquare || isTriangle || isHexagon) && inUiZone(zones, x, y)) continue;
+
                     // Only add if NOT a player color and NOT dark red
                     if (isSquare && !isDarkRed) {
                         objects.squares.push({ x, y, type: 'square' });
@@ -222,6 +252,7 @@
     let wasmPtr = 0;
     const WASM_MASKS = { all: 7, squares: 1, triangles: 2, hexagons: 4 };
     const WASM_TYPES = [null, 'square', 'triangle', 'hexagon'];
+    const WASM_ZONE_BYTES = 256;
 
     (function loadWasm() {
         const b64 = window.__hexlockWasm;
@@ -241,12 +272,16 @@
         const ctx = canvas.getContext('2d');
         const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
 
-        // The pixel buffer sits at the end of WASM memory, so growing memory extends it
-        const short = wasmPtr + pixels.length - wasm.memory.buffer.byteLength;
-        if (short > 0) wasm.memory.grow(Math.ceil(short / 65536));
-        new Uint8Array(wasm.memory.buffer, wasmPtr, pixels.length).set(pixels);
+        const zones = getUiZones(canvas);
 
-        const type = wasm.scan(wasmPtr, canvas.width, canvas.height, 3, WASM_MASKS[targetType]);
+        // Our buffer sits at the end of WASM memory (zones first, then pixels), so growing memory extends it
+        const pixelPtr = wasmPtr + WASM_ZONE_BYTES;
+        const short = pixelPtr + pixels.length - wasm.memory.buffer.byteLength;
+        if (short > 0) wasm.memory.grow(Math.ceil(short / 65536));
+        new Uint32Array(wasm.memory.buffer, wasmPtr, zones.length * 4).set(zones.flat());
+        new Uint8Array(wasm.memory.buffer, pixelPtr, pixels.length).set(pixels);
+
+        const type = wasm.scan(pixelPtr, canvas.width, canvas.height, 3, WASM_MASKS[targetType], wasmPtr, zones.length);
         if (!type) return null;
         return { x: wasm.hit_x(), y: wasm.hit_y(), type: WASM_TYPES[type] };
     }

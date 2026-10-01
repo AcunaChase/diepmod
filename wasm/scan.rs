@@ -40,11 +40,34 @@ fn classify(r: u8, g: u8, b: u8) -> u32 {
     0
 }
 
+#[inline(always)]
+unsafe fn in_zone(zones: *const u32, zone_count: u32, x: u32, y: u32) -> bool {
+    let mut i = 0usize;
+    while i < zone_count as usize {
+        let z = zones.add(i * 4);
+        if x >= *z && y >= *z.add(1) && x < *z.add(2) && y < *z.add(3) {
+            return true;
+        }
+        i += 1;
+    }
+    false
+}
+
 /// Scans RGBA `pixels` (width * height * 4 bytes), sampling every `step` pixels.
 /// `mask` picks which shapes count: bit 0 squares, bit 1 triangles, bit 2 hexagons.
+/// `zones` holds `zone_count` boxes of [x0, y0, x1, y1]; pixels inside one are never targets
+/// (the game's HUD is drawn on the same canvas and reuses shape colors).
 /// Returns the type of the nearest match (0 if none); read its position with hit_x / hit_y.
 #[no_mangle]
-pub unsafe extern "C" fn scan(pixels: *const u8, width: u32, height: u32, step: u32, mask: u32) -> u32 {
+pub unsafe extern "C" fn scan(
+    pixels: *const u8,
+    width: u32,
+    height: u32,
+    step: u32,
+    mask: u32,
+    zones: *const u32,
+    zone_count: u32,
+) -> u32 {
     let step = if step == 0 { 1 } else { step };
     let cx = width as f64 / 2.0;
     let cy = height as f64 / 2.0;
@@ -60,7 +83,7 @@ pub unsafe extern "C" fn scan(pixels: *const u8, width: u32, height: u32, step: 
         while x < width {
             let p = row.add((x as usize) * 4);
             let kind = classify(*p, *p.add(1), *p.add(2));
-            if kind != 0 && mask & (1 << (kind - 1)) != 0 {
+            if kind != 0 && mask & (1 << (kind - 1)) != 0 && !in_zone(zones, zone_count, x, y) {
                 let dx = x as f64 - cx;
                 let dist = dx * dx + dy * dy;
                 // dist > 100 skips your own tank; ties go to the lower type, then scan order
