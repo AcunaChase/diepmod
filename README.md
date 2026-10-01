@@ -8,7 +8,6 @@ A Chrome extension mod menu for [diep.io](https://diep.io) that auto-farms shape
 - **Target picker**: all shapes, or only squares, triangles or hexagons
 - **Show Targets**: crosshair, label and line to the current target
 - **Spinner**: sweeps your aim in a circle while firing
-- **Avoids players**: skips the red player color
 - **Draggable menu**
 
 ## How it works
