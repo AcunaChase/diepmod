@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DiepMod by Chase Geer</title>
+<title>Hexlock · auto-farm mod for diep.io</title>
+<link rel="icon" type="image/svg+xml" href="logo.svg">
 <meta name="description" content="A Chrome extension mod menu for diep.io that auto-farms shapes using live canvas pixel scanning.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
@@ -21,7 +22,7 @@
   code,.mono{font-family:"JetBrains Mono",monospace}
   a{color:var(--gold)}
   nav{display:flex;justify-content:space-between;align-items:center;padding:22px 0}
-  nav .logo{font-weight:700;letter-spacing:.04em}
+  nav .logo{font-weight:700;letter-spacing:.08em;font-size:18px;display:flex;align-items:center;gap:10px}
   nav .logo span{color:var(--gold)}
   nav a{color:var(--muted);text-decoration:none;margin-left:20px;font-size:14px}
   nav a:hover{color:var(--text)}
@@ -101,7 +102,7 @@
 <body>
 <div class="wrap">
   <nav>
-    <div class="logo mono">⚡ CHASE<span>GEER</span>/diepmod</div>
+    <div class="logo mono"><img src="logo.svg" alt="" width="32" height="32">HEX<span>LOCK</span></div>
     <div class="links">
       <a href="#features">Features</a>
       <a href="#how">How it works</a>
@@ -113,9 +114,9 @@
     <div>
       <div class="tag mono">Chrome extension · Manifest V3 · v1.0</div>
       <h1>A mod menu for <em>diep.io</em> that farms for you.</h1>
-      <p class="lead">DiepMod reads the game canvas pixel by pixel, finds the nearest shape, and aims and fires at it automatically. You keep control of upgrades.</p>
+      <p class="lead">Hexlock reads the game canvas pixel by pixel, finds the nearest shape, and aims and fires at it automatically. You keep control of upgrades.</p>
       <div class="btns">
-        <a class="btn primary" href="diepmod-extension.zip">Download extension</a>
+        <a class="btn primary" href="hexlock-extension.zip">Download extension</a>
         <a class="btn ghost" href="extension/content.js">View source</a>
       </div>
     </div>
@@ -127,7 +128,7 @@
       <div class="barrel"></div><div class="tank"></div>
       <div class="lock"></div>
       <div class="menu">
-        <b>⚡ CHASE GEER</b>
+        <b>⬡ HEXLOCK</b>
         <div class="lbl">🎯 FARM TARGET</div>
         <div class="sel">🎯 All Items ▾</div>
         <div class="row"><span class="cb on"></span>🎯 Auto-Farm</div>
@@ -184,7 +185,7 @@
     <h2>Install</h2>
     <p class="sub">Takes about a minute in Chrome or any Chromium browser.</p>
     <ol class="install">
-      <li><b>Download</b> <a href="diepmod-extension.zip">diepmod-extension.zip</a> and unzip it.</li>
+      <li><b>Download</b> <a href="hexlock-extension.zip">hexlock-extension.zip</a> and unzip it.</li>
       <li>Go to <code>chrome://extensions</code>.</li>
       <li>Turn on <b>Developer mode</b> (top right).</li>
       <li>Click <b>Load unpacked</b> and pick the unzipped <code>extension</code> folder.</li>
@@ -194,7 +195,7 @@
   </section>
 
   <footer>
-    <span>Built by Chase Geer</span>
+    <span>Hexlock · a diep.io mod</span>
     <span class="mono">JavaScript · Chrome Extensions API · Canvas</span>
   </footer>
 </div>

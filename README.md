@@ -1,4 +1,4 @@
-# ⚡ DiepMod
+# <img src="logo.svg" width="36" align="top" alt=""> Hexlock
 
 A Chrome extension mod menu for [diep.io](https://diep.io) that auto-farms shapes by reading the game canvas.
 
@@ -19,7 +19,7 @@ A Chrome extension mod menu for [diep.io](https://diep.io) that auto-farms shape
 
 ## Install
 
-1. Download `diepmod-extension.zip` and unzip it (or clone this repo)
+1. Download `hexlock-extension.zip` and unzip it (or clone this repo)
 2. Go to `chrome://extensions`
 3. Turn on **Developer mode**
 4. Click **Load unpacked** and pick the `extension` folder
@@ -31,11 +31,11 @@ A Chrome extension mod menu for [diep.io](https://diep.io) that auto-farms shape
 extension/
   manifest.json   Manifest V3 config, runs on diep.io
   content.js      Menu, pixel scanner and auto-aim loop
+  icon*.png       Extension icons
 index.html        Project page (GitHub Pages)
+logo.svg          Logo and favicon
 ```
 
 ## Note
 
 Personal learning project in browser extensions and canvas image processing. Using bots may break a game's rules, so use at your own risk.
-
-Built by Chase Geer.

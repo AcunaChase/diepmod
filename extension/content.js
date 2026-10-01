@@ -1,16 +1,16 @@
-// Chase Geer Mod - Auto Farm Edition (No Player Shooting)
+// Hexlock - Auto Farm Edition (No Player Shooting)
 (function() {
     "use strict";
 
-    console.log('🚀 Chase Geer Mod - Auto Farm Edition');
+    console.log('🚀 Hexlock - Auto Farm Edition');
 
     // ========== CREATE MENU ==========
     function createMenu() {
-        const oldMenu = document.getElementById('chaseGeerMenu');
+        const oldMenu = document.getElementById('hexlockMenu');
         if (oldMenu) oldMenu.remove();
 
         const menu = document.createElement('div');
-        menu.id = 'chaseGeerMenu';
+        menu.id = 'hexlockMenu';
         menu.style.cssText = `
             position: fixed !important;
             top: 10px !important;
@@ -35,7 +35,7 @@
         `;
 
         menu.innerHTML = `
-            <div style="color:#ffd700;font-weight:bold;font-size:16px;margin-bottom:10px;">⚡ CHASE GEER</div>
+            <div style="color:#ffd700;font-weight:bold;font-size:16px;margin-bottom:10px;">⬡ HEXLOCK</div>
             
             <div style="margin-bottom:8px;border-bottom:1px solid #333;padding-bottom:8px;">
                 <div style="color:#aaa;font-size:11px;margin-bottom:4px;">🎯 FARM TARGET</div>
@@ -400,7 +400,7 @@
 
     // ========== MAKE MENU DRAGGABLE ==========
     setTimeout(() => {
-        const menuEl = document.getElementById('chaseGeerMenu');
+        const menuEl = document.getElementById('hexlockMenu');
         if (menuEl) {
             let isDragging = false;
             let offsetX, offsetY;
@@ -426,7 +426,7 @@
         }
     }, 2000);
 
-    console.log('✅ Chase Geer Mod - Auto Farm Ready!');
+    console.log('✅ Hexlock - Auto Farm Ready!');
     console.log('🎯 Auto-farms: Squares (yellow), Triangles (red), Hexagons (blue)');
     console.log('🚫 AVOIDS: rgba(241, 78, 84) - Player Color!');
     console.log('💡 You control upgrades manually!');
