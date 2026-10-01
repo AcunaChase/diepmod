@@ -64,9 +64,14 @@
         `;
 
         document.body.appendChild(menu);
-        // Top center: the game's class upgrades use the top left, the leaderboard the top right
-        const centered = Math.max(10, (window.innerWidth - menu.offsetWidth) / 2);
-        menu.style.setProperty('left', centered + 'px', 'important');
+        // Right edge, in the gap between the game's scoreboard (top right) and minimap (bottom right)
+        const s = Math.max(window.innerWidth / 1920, window.innerHeight / 1080); // the game's UI scale
+        const gapTop = 300 * s;
+        const gapBottom = window.innerHeight - 250 * s;
+        const left = Math.max(10, window.innerWidth - menu.offsetWidth - 10);
+        const top = Math.max(10, (gapTop + gapBottom - menu.offsetHeight) / 2);
+        menu.style.setProperty('left', left + 'px', 'important');
+        menu.style.setProperty('top', top + 'px', 'important');
         console.log('✅ Menu created!');
         return menu;
     }
