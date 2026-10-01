@@ -215,14 +215,59 @@
         return objects;
     }
 
+    // ========== WASM SCANNER ==========
+    // Same detection as detectItems(), compiled from wasm/scan.rs.
+    // If it can't load, the JavaScript scanner below is used instead.
+    let wasm = null;
+    let wasmPtr = 0;
+    const WASM_MASKS = { all: 7, squares: 1, triangles: 2, hexagons: 4 };
+    const WASM_TYPES = [null, 'square', 'triangle', 'hexagon'];
+
+    (function loadWasm() {
+        const b64 = window.__hexlockWasm;
+        delete window.__hexlockWasm;
+        if (!b64 || typeof WebAssembly === 'undefined') return;
+        try {
+            const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+            WebAssembly.instantiate(bytes).then(result => {
+                wasm = result.instance.exports;
+                wasmPtr = wasm.memory.buffer.byteLength;
+                console.log('✅ WASM scanner loaded');
+            }).catch(() => console.log('⚠️ WASM scanner unavailable, using JS scanner'));
+        } catch(e) {}
+    })();
+
+    function findNearestWasm(canvas, targetType) {
+        const ctx = canvas.getContext('2d');
+        const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+        // The pixel buffer sits at the end of WASM memory, so growing memory extends it
+        const short = wasmPtr + pixels.length - wasm.memory.buffer.byteLength;
+        if (short > 0) wasm.memory.grow(Math.ceil(short / 65536));
+        new Uint8Array(wasm.memory.buffer, wasmPtr, pixels.length).set(pixels);
+
+        const type = wasm.scan(wasmPtr, canvas.width, canvas.height, 3, WASM_MASKS[targetType]);
+        if (!type) return null;
+        return { x: wasm.hit_x(), y: wasm.hit_y(), type: WASM_TYPES[type] };
+    }
+
     // ========== FIND NEAREST ITEM ==========
     function findNearestItem() {
         if (!elements) return null;
-        
+
         const canvas = document.querySelector('canvas');
         if (!canvas) return null;
-        
+
         const targetType = elements.target.value;
+
+        if (wasm) {
+            try {
+                return findNearestWasm(canvas, targetType);
+            } catch(e) {
+                wasm = null;
+            }
+        }
+
         const objects = detectItems();
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;

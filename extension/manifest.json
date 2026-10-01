@@ -9,7 +9,7 @@
   "content_scripts": [
     {
       "matches": ["https://diep.io/*"],
-      "js": ["content.js"],
+      "js": ["scanner-wasm.js", "content.js"],
       "run_at": "document_start",
       "world": "MAIN"
     }

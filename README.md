@@ -17,6 +17,8 @@ A Chrome extension mod menu for [diep.io](https://diep.io) that auto-farms shape
 3. Picks the shape closest to the center of the screen (your tank)
 4. Sends synthetic mouse events to aim and shoot, every 30 ms
 
+Steps 2 and 3 run in a small WebAssembly module written in Rust (`wasm/scan.rs`). If it can't load, the extension falls back to the same logic in JavaScript.
+
 ## Install
 
 1. Download `hexlock-extension.zip` and unzip it (or clone this repo)
@@ -30,8 +32,12 @@ A Chrome extension mod menu for [diep.io](https://diep.io) that auto-farms shape
 ```
 extension/
   manifest.json   Manifest V3 config, runs on diep.io
-  content.js      Menu, pixel scanner and auto-aim loop
+  content.js      Menu, auto-aim loop and fallback scanner
+  scanner-wasm.js The compiled WebAssembly scanner (generated)
   icon*.png       Extension icons
+wasm/
+  scan.rs         Pixel scanner source (Rust)
+  build.ps1       Rebuilds scanner-wasm.js and the zip
 index.html        Project page (GitHub Pages)
 logo.svg          Logo and favicon
 ```
